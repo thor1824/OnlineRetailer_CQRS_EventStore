@@ -1,45 +1,111 @@
 using System;
 using System.Threading.Tasks;
+using Microsoft.Extensions.Logging;
 using OnlineRetailer.CustomerApi.Command.Facade;
+using OnlineRetailer.CustomerApi.Events;
+using OnlineRetailer.Domain.Common;
+using OnlineRetailer.Domain.EventStore.Repository.Facade;
+using OnlineRetailer.Domain.EventStore.Streams;
+using OnlineRetailer.Domain.Exceptions;
 
 namespace OnlineRetailer.CustomerApi.Command
 {
     public class CustomerCommand : ICustomerCommand
     {
-        public Task<(bool wasSucces, string message)> RemoveAsync(Guid id)
+        private readonly IEventRepository _eventRepository;
+        private readonly ILogger<CustomerCommand> _logger;
+
+        public CustomerCommand(ILogger<CustomerCommand> logger, IEventRepository eventRepository)
         {
-            throw new NotImplementedException();
+            _logger = logger;
+            _eventRepository = eventRepository;
         }
 
-        public Task<(bool wasSucces, string message, Guid guid)> AddAsync(string name, string category, decimal price,
-            int itemsInStock)
+        public async Task<(bool wasSucces, string message)> RemoveAsync(Guid id)
         {
-            throw new NotImplementedException();
+            _logger.Log(LogLevel.Debug, $"Removing Customer: {id}");
+            var evnt = new RemoveCustomer(DateTime.UtcNow);
+
+            return await ApplyChangeAsync(id, evnt);
         }
 
-        public Task<(bool wasSucces, string message)> ChangeShippingAddress(Guid guid, string newShippingAddress)
+        public async Task<(bool wasSucces, string message, Guid guid)> AddAsync(string name, string email, string phone,
+            string billingAddress, string shippingAddress)
         {
-            throw new NotImplementedException();
+            var newId = Guid.NewGuid();
+            _logger.Log(LogLevel.Debug, $"Customer was assigned: id: {newId.ToString()}," +
+                                        $"Name: {name}, Email: {email}, Phone: {phone}, billingAddress: {billingAddress}, shippingAddress: {shippingAddress}");
+
+            var evnt = new NewCustomer(name, email, phone, billingAddress, shippingAddress, DateTime.UtcNow);
+
+            var (wasSuccess, message) = await ApplyNewAsync(newId, evnt);
+            return (wasSuccess, message, newId);
         }
 
-        public Task<(bool wasSucces, string message)> ChangeBillingAddress(Guid guid, string newBillingAddress)
+        public async Task<(bool wasSucces, string message)> ChangeShippingAddress(Guid id, string newShippingAddress)
         {
-            throw new NotImplementedException();
+            _logger.Log(LogLevel.Debug, $"Alter Customer: {id}, Change Shipping Address to {newShippingAddress}");
+            var evnt = new ChangeShippingAddress(newShippingAddress, DateTime.UtcNow);
+
+            return await ApplyChangeAsync(id, evnt);
         }
 
-        public Task<(bool wasSucces, string message)> ChangePhone(Guid guid, object newPhone)
+        public async Task<(bool wasSucces, string message)> ChangeBillingAddress(Guid id, string newBillingAddress)
         {
-            throw new NotImplementedException();
+            _logger.Log(LogLevel.Debug, $"Alter Customer: {id}, Change Billing Address to {newBillingAddress}");
+            var evnt = new ChangeBillingAddress(newBillingAddress, DateTime.UtcNow);
+
+            return await ApplyChangeAsync(id, evnt);
         }
 
-        public Task<(bool wasSucces, string message)> ChangeEmail(Guid guid, string newEmail)
+        public async Task<(bool wasSucces, string message)> ChangePhone(Guid id, string newPhone)
         {
-            throw new NotImplementedException();
+            _logger.Log(LogLevel.Debug, $"Alter Customer: {id}, Change phone number to {newPhone}");
+            var evnt = new ChangePhone(newPhone, DateTime.UtcNow);
+
+            return await ApplyChangeAsync(id, evnt);
         }
 
-        public Task<(bool wasSucces, string message)> ChangeName(Guid guid, string newName)
+        public async Task<(bool wasSucces, string message)> ChangeEmail(Guid id, string newEmail)
         {
-            throw new NotImplementedException();
+            _logger.Log(LogLevel.Debug, $"Alter Customer: {id}, Change email to {newEmail}");
+            var evnt = new ChangeEmail(newEmail, DateTime.UtcNow);
+
+            return await ApplyChangeAsync(id, evnt);
+        }
+
+        public async Task<(bool wasSucces, string message)> ChangeName(Guid id, string newName)
+        {
+            _logger.Log(LogLevel.Debug, $"Alter Customer: {id}, Change name to {newName}");
+            var evnt = new ChangeName(newName, DateTime.UtcNow);
+
+            return await ApplyChangeAsync(id, evnt);
+        }
+
+
+        private async Task<(bool wasSucces, string message)> ApplyChangeAsync<TEvent>(Guid id, TEvent evnt)
+            where TEvent : IEvent
+        {
+            var customerStream = new CustomerStream(id);
+            var exists = await _eventRepository.ExistsAsync(customerStream.StreamId);
+            if (!exists) throw new EventStreamNotFound(customerStream.StreamId);
+
+            await _eventRepository.ApplyAsync(evnt, customerStream.StreamId);
+
+            return (true, "Success");
+        }
+
+        private async Task<(bool wasSucces, string message)> ApplyNewAsync<TEvent>(Guid id, TEvent evnt)
+            where TEvent : IEvent
+        {
+            var customerStream = new CustomerStream(id);
+
+            if (await _eventRepository.ExistsAsync(customerStream.StreamId))
+                throw new EventStreamAlreadyExists(customerStream.StreamId);
+
+            await _eventRepository.ApplyAsync(evnt, customerStream.StreamId);
+
+            return (true, "Success");
         }
     }
 }

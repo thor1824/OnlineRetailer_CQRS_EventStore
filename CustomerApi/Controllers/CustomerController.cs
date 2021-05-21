@@ -4,6 +4,7 @@ using System.Threading.Tasks;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.Extensions.Logging;
 using OnlineRetailer.CustomerApi.Command.Facade;
+using OnlineRetailer.CustomerApi.Events;
 using OnlineRetailer.CustomerApi.Query.Facade;
 
 namespace OnlineRetailer.CustomerApi.Controllers
@@ -79,13 +80,13 @@ namespace OnlineRetailer.CustomerApi.Controllers
         /// <param name="postDto"></param>
         /// <returns>the created product</returns>
         [HttpPost]
-        public async Task<IActionResult> Post([FromBody] PostProductDto postDto)
+        public async Task<IActionResult> Post([FromBody] CreateDto postDto)
         {
             _logger.Log(LogLevel.Debug, "Post Request Received");
             try
             {
-                var (wasSuccessAdded, messageAdded, id) = await _customerCommand.AddAsync(postDto.Name,
-                    postDto.Category, postDto.Price, postDto.ItemsInStock);
+                var (wasSuccessAdded, messageAdded, id) = await _customerCommand.AddAsync(postDto.Name, postDto.Email,
+                    postDto.Phone, postDto.BillingAddress, postDto.ShippingAddress);
                 if (!wasSuccessAdded)
                 {
                     _logger.Log(LogLevel.Debug, $"Product was not added because: {messageAdded}");
@@ -263,13 +264,8 @@ namespace OnlineRetailer.CustomerApi.Controllers
         }
     }
 
-    public class PostProductDto
-    {
-        public string Name { get; set; }
-        public string Category { get; set; }
-        public decimal Price { get; set; }
-        public int ItemsInStock { get; set; }
-    }
+
+    public record CreateDto(string Name, string Email, string Phone, string BillingAddress, string ShippingAddress);
 
     public record NameChangeDto(string NewName);
 

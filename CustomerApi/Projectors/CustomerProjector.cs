@@ -23,7 +23,63 @@ namespace OnlineRetailer.CustomerApi.Projectors
                 case NewCustomer newCustomer:
                     Apply(newCustomer);
                     break;
+                case ChangeShippingAddress changeShippingAddress:
+                    Apply(changeShippingAddress);
+                    break;
+                case ChangeBillingAddress changeBillingAddress:
+                    Apply(changeBillingAddress);
+                    break;
+                case ChangeCreditStanding creditStanding:
+                    Apply(creditStanding);
+                    break;
+                case ChangeEmail changeEmail:
+                    Apply(changeEmail);
+                    break;
+                case ChangeName changeName:
+                    Apply(changeName);
+                    break;
+                case ChangePhone changePhone:
+                    Apply(changePhone);
+                    break;
+                case RemoveCustomer removeCustomer:
+                    Apply(removeCustomer);
+                    break;
             }
+        }
+
+        private void Apply(ChangeShippingAddress changeShippingAddress)
+        {
+            Projection.ShippingAddress = changeShippingAddress.NewShippingAddress;
+        }
+
+        private void Apply(RemoveCustomer _)
+        {
+            Projection.IsDeleted = true;
+        }
+
+        private void Apply(ChangePhone changePhone)
+        {
+            Projection.Phone = changePhone.NewPhoneNumber;
+        }
+
+        private void Apply(ChangeName changeName)
+        {
+            Projection.Name = changeName.NewName;
+        }
+
+        private void Apply(ChangeEmail changeEmail)
+        {
+            Projection.Email = changeEmail.NewEmail;
+        }
+
+        private void Apply(ChangeCreditStanding changeCreditStanding)
+        {
+            Projection.CreditStanding = changeCreditStanding.NewCreditStanding;
+        }
+
+        private void Apply(ChangeBillingAddress changeBillingAddress)
+        {
+            Projection.BillingAddress = changeBillingAddress.NewBillingAddress;
         }
 
         private void Apply(NewCustomer newCustomer)

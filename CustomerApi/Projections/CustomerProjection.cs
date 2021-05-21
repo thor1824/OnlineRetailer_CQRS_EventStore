@@ -11,5 +11,6 @@ namespace OnlineRetailer.CustomerApi.Projections
         public string BillingAddress { get; set; }
         public string ShippingAddress { get; set; }
         public decimal? CreditStanding { get; set; }
+        public bool IsDeleted { get; set; }
     }
 }

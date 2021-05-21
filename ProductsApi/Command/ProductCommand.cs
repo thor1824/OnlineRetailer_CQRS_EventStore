@@ -111,8 +111,4 @@ namespace OnlineRetailer.ProductsApi.Command
             return (true, "Success");
         }
     }
-
-    public interface ICommand
-    {
-    }
 }

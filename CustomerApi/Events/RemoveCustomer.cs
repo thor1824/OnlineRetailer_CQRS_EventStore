@@ -6,6 +6,6 @@ namespace OnlineRetailer.CustomerApi.Events
     public record RemoveCustomer(DateTime TimeStamp) : IEvent
     {
         public static string EventTypeStatic => "RemoveCustomer";
-        public string EventType { get; }
+        public string EventType => EventTypeStatic;
     }
 }
