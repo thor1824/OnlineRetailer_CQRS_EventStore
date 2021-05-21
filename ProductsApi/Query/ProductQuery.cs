@@ -5,11 +5,12 @@ using System.Text.Json;
 using System.Threading.Tasks;
 using EventStore.Client;
 using Microsoft.Extensions.Logging;
+using OnlineRetailer.Domain.Common;
+using OnlineRetailer.Domain.EventStore.Repository.Facade;
+using OnlineRetailer.Domain.EventStore.Streams;
+using OnlineRetailer.Domain.Exceptions;
 using OnlineRetailer.ProductsApi.Events;
-using OnlineRetailer.ProductsApi.Events.Facade;
-using OnlineRetailer.ProductsApi.EventStore.Repository.Facade;
-using OnlineRetailer.ProductsApi.Exceptions;
-using OnlineRetailer.ProductsApi.Models;
+using OnlineRetailer.ProductsApi.Projectors;
 using OnlineRetailer.ProductsApi.Query.Facades;
 
 namespace OnlineRetailer.ProductsApi.Query
@@ -26,11 +27,12 @@ namespace OnlineRetailer.ProductsApi.Query
             _eventRepository = eventRepository;
         }
 
-        public async Task<ProductStream> ByIdAsync(Guid id)
+        public async Task<StandardProductProjector> ByIdAsync(Guid id)
         {
             _logger.Log(LogLevel.Debug, $"Querying product by Id: {id.ToString()}");
 
             var stream = new ProductStream(id);
+            var projector = new StandardProductProjector(stream);
 
             _logger.Log(LogLevel.Debug, $"{stream.StreamId}: Fetching Events from stream");
             var events = await _eventRepository.GetAllByStreamIdAsync(stream.StreamId);
@@ -39,17 +41,17 @@ namespace OnlineRetailer.ProductsApi.Query
             foreach (var evnt in events)
             {
                 var e = DeserializeEvent(evnt.Event);
-                stream.ApplyEvent(e);
+                projector.ApplyEvent(e);
             }
 
             _logger.Log(LogLevel.Debug, $"{stream.StreamId}: was projected successfully");
-            return stream;
+            return projector;
         }
 
-        public async Task<IEnumerable<ProductStream>> AllAsync()
+        public async Task<IEnumerable<StandardProductProjector>> AllAsync()
         {
             _logger.Log(LogLevel.Debug, "Querying all Products");
-            var dic = new Dictionary<string, ProductStream>();
+            var dic = new Dictionary<string, StandardProductProjector>();
 
             _logger.Log(LogLevel.Debug, "Fetching all Events");
             var events = await _eventRepository.GetAllAsync();
@@ -60,19 +62,26 @@ namespace OnlineRetailer.ProductsApi.Query
             return dic.Values.ToList();
         }
 
-        private void HandleEvent(ResolvedEvent evnt, Dictionary<string, ProductStream> dic)
+        private void HandleEvent(ResolvedEvent evnt, Dictionary<string, StandardProductProjector> dic)
         {
             _logger.Log(LogLevel.Debug, $"Handling event from stream: {evnt.Event.EventStreamId}");
             if (evnt.Event.EventStreamId.StartsWith(_streamName)) HandleProductEvent(evnt, dic);
         }
 
-        private void HandleProductEvent(ResolvedEvent evnt, Dictionary<string, ProductStream> dic)
+        private void HandleProductEvent(ResolvedEvent evnt, Dictionary<string, StandardProductProjector> dic)
         {
             if (!dic.ContainsKey(evnt.Event.EventStreamId))
-                dic.Add(evnt.Event.EventStreamId,
-                    new ProductStream(Guid.Parse(evnt.Event.EventStreamId.Replace(_streamName, ""))));
+            {
+                var id = Guid.Parse(evnt.Event.EventStreamId.Replace(_streamName, ""));
+                var newStream = new ProductStream(id);
+                var newProjector = new StandardProductProjector(newStream);
+
+                dic.Add(evnt.Event.EventStreamId, newProjector);
+            }
+
 
             var stream = dic[evnt.Event.EventStreamId];
+
             var e = DeserializeEvent(evnt.Event);
             stream.ApplyEvent(e);
         }
@@ -87,16 +96,16 @@ namespace OnlineRetailer.ProductsApi.Query
 
             if (record.EventType == ChangeName.EventTypeStatic)
                 return JsonSerializer.Deserialize<ChangeName>(record.Data.ToArray());
-            
+
             if (record.EventType == ChangeCategory.EventTypeStatic)
                 return JsonSerializer.Deserialize<ChangeCategory>(record.Data.ToArray());
-            
+
             if (record.EventType == ChangePrice.EventTypeStatic)
                 return JsonSerializer.Deserialize<ChangePrice>(record.Data.ToArray());
-            
+
             if (record.EventType == Restock.EventTypeStatic)
                 return JsonSerializer.Deserialize<Restock>(record.Data.ToArray());
-            
+
             if (record.EventType == Reserve.EventTypeStatic)
                 return JsonSerializer.Deserialize<Reserve>(record.Data.ToArray());
 

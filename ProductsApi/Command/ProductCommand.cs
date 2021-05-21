@@ -1,12 +1,12 @@
 ﻿using System;
 using System.Threading.Tasks;
 using Microsoft.Extensions.Logging;
+using OnlineRetailer.Domain.Common;
+using OnlineRetailer.Domain.EventStore.Repository.Facade;
+using OnlineRetailer.Domain.EventStore.Streams;
+using OnlineRetailer.Domain.Exceptions;
 using OnlineRetailer.ProductsApi.Command.Facades;
 using OnlineRetailer.ProductsApi.Events;
-using OnlineRetailer.ProductsApi.Events.Facade;
-using OnlineRetailer.ProductsApi.EventStore.Repository.Facade;
-using OnlineRetailer.ProductsApi.Exceptions;
-using OnlineRetailer.ProductsApi.Models;
 
 namespace OnlineRetailer.ProductsApi.Command
 {
@@ -91,10 +91,7 @@ namespace OnlineRetailer.ProductsApi.Command
         {
             var productStream = new ProductStream(id);
             var exists = await _eventRepository.ExistsAsync(productStream.StreamId);
-            if (!exists)
-            {
-                throw new EventStreamNotFound(productStream.StreamId);
-            }
+            if (!exists) throw new EventStreamNotFound(productStream.StreamId);
 
             await _eventRepository.ApplyAsync(evnt, productStream.StreamId);
 

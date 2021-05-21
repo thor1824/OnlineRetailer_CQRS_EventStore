@@ -38,7 +38,7 @@ namespace OnlineRetailer.ProductsApi.Controllers
                 var guid = Guid.Parse(id);
                 var product = await _productQuery.ByIdAsync(guid);
                 _logger.Log(LogLevel.Debug, $"product with an id of {id}, was fetched");
-                return Ok(product.ProjectProduct());
+                return Ok(product.Projection);
             }
             catch (FormatException fe)
             {
@@ -64,7 +64,7 @@ namespace OnlineRetailer.ProductsApi.Controllers
             {
                 var products = await _productQuery.AllAsync();
                 _logger.Log(LogLevel.Debug, "All product was fetched");
-                return Ok(products.Select(product => product.ProjectProduct()));
+                return Ok(products.Select(product => product.Projection));
             }
             catch (Exception e)
             {

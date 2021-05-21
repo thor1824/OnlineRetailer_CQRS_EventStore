@@ -1,5 +1,5 @@
 ﻿using System;
-using OnlineRetailer.ProductsApi.Events.Facade;
+using OnlineRetailer.Domain.Common;
 
 namespace OnlineRetailer.ProductsApi.Events
 {
