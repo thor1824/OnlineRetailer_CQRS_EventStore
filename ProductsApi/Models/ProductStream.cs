@@ -7,10 +7,138 @@ using OnlineRetailer.ProductsApi.Models.Projections;
 
 namespace OnlineRetailer.ProductsApi.Models
 {
-    public class ProductStream
+    public abstract class BaseStream<TEventInterFace, TProjection> where TEventInterFace : IEvent
+    {
+        public IProjector<TEventInterFace, TProjection> Projector { get; }
+        
+
+        protected BaseStream(Guid id, string streamPrefix, IProjector<TEventInterFace, TProjection> projector)
+        {
+            Id = id;
+            StreamPrefix = streamPrefix;
+            Projector = projector;
+        }
+
+        public IList<TEventInterFace> EventStream { get; } = new List<TEventInterFace>();
+        public Guid Id { get; }
+        public string StreamPrefix { get; }
+        public string StreamId => StreamPrefix + Id.ToString("N");
+
+        public void ApplyEvent(TEventInterFace evnt)
+        {
+            EventStream.Add(evnt);
+            Projector.ApplyEvent(evnt);
+        }
+        
+    }
+
+    public interface IProjector<TEventInterFace, TProjection> where TEventInterFace : IEvent
+    {
+        TProjection Projection { get; }
+
+        void ApplyEvent(TEventInterFace evnt);
+
+        TProjection GetProjection();
+    }
+
+    public class StandardProductProjector : IProjector<IProductEvent, ProductProjection>
+    {
+        public ProductProjection Projection { get; }
+
+        public void ApplyEvent(IProductEvent evnt)
+        {
+            switch (evnt)
+            {
+                case NewProduct addProduct:
+                    Apply(addProduct);
+                    break;
+                case RemoveProduct removeProduct:
+                    Apply(removeProduct);
+                    break;
+                case ChangeCategory changeCategory:
+                    Apply(changeCategory);
+                    break;
+                case ChangeName changeName:
+                    Apply(changeName);
+                    break;
+                case ChangePrice changePrice:
+                    Apply(changePrice);
+                    break;
+                case Reserve reserve:
+                    Apply(reserve);
+                    break;
+                case Restock restock:
+                    Apply(restock);
+                    break;
+                default:
+                    throw new EventTypeNotSupportedException($"Unsupported Event type detected: {evnt.GetType().Name}");
+            }
+        }
+        
+        private void Apply(NewProduct evnt)
+        {
+            Projection.Name = evnt.Name;
+            Projection.Category = evnt.Category;
+            Projection.Price = evnt.Price;
+            Projection.ItemsInStock = evnt.ItemsInStock;
+        }
+
+        private void Apply(RemoveProduct evnt)
+        {
+            Projection.IsDeleted = true;
+        }
+
+        private void Apply(ChangeName evnt)
+        {
+            Projection.Name = evnt.NewName;
+        }
+
+        private void Apply(ChangePrice evnt)
+        {
+            Projection.Price = evnt.NewPrice;
+        }
+
+        private void Apply(ChangeCategory evnt)
+        {
+            Projection.Category = evnt.NewCategory;
+        }
+
+        private void Apply(Reserve evnt)
+        {
+            Projection.ItemsInStock -= evnt.AmountToReserved;
+            Projection.ItemsReserved += evnt.AmountToReserved;
+        }
+
+        private void Apply(Restock evnt)
+        {
+            Projection.ItemsInStock += evnt.AmountRestock;
+        }
+
+        public ProductProjection GetProjection()
+        {
+            return Projection;
+        }
+    }
+
+    public interface IProductEvent : IEvent
+    {
+    }
+
+    public class ProductsStream<TProjection> : BaseStream<IProductEvent, TProjection>
+    {
+        public ProductsStream(Guid id, IProjector<IProductEvent, TProjection> projector) : base(id, "product-", projector)
+        {
+            
+        }
+
+        public ProductsStream(Guid id): this(id, null)
+        {
+        }
+    }
+
+    public class ProductStream 
     {
         private readonly ProductProjection _currentState = new();
-        private readonly IList<IEvent> _events = new List<IEvent>();
         private readonly string _streamPrefix = "product-";
 
         public ProductStream(Guid id)
