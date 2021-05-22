@@ -5,16 +5,16 @@ namespace OnlineRetailer.Domain.Common
 {
     public abstract class BaseStream
     {
-        protected BaseStream(Guid id, string streamPrefix)
+        protected BaseStream(Guid aggregateId, string streamPrefix)
         {
-            Id = id;
+            AggregateId = aggregateId;
             StreamPrefix = streamPrefix;
         }
 
         public IList<IEvent> EventStream { get; } = new List<IEvent>();
-        public Guid Id { get; }
+        public Guid AggregateId { get; }
         public string StreamPrefix { get; }
-        public string StreamId => StreamPrefix + Id.ToString("N");
+        public string StreamId => StreamPrefix + AggregateId.ToString("N");
 
         public void AddEvent(IEvent evnt)
         {

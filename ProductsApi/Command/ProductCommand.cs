@@ -2,11 +2,11 @@
 using System.Threading.Tasks;
 using Microsoft.Extensions.Logging;
 using OnlineRetailer.Domain.Common;
-using OnlineRetailer.Domain.EventStore.Repository.Facade;
-using OnlineRetailer.Domain.EventStore.Streams;
+using OnlineRetailer.Domain.Events.ProductEvents;
 using OnlineRetailer.Domain.Exceptions;
+using OnlineRetailer.Domain.Repository.Facade;
+using OnlineRetailer.Domain.Streams;
 using OnlineRetailer.ProductsApi.Command.Facades;
-using OnlineRetailer.ProductsApi.Events;
 
 namespace OnlineRetailer.ProductsApi.Command
 {
@@ -44,7 +44,7 @@ namespace OnlineRetailer.ProductsApi.Command
         }
 
 
-        public async Task<(bool wasSucces, string message)> IncreaseStuckAsync(Guid id, int amountRestocked)
+        public async Task<(bool wasSucces, string message)> IncreaseStockAsync(Guid id, int amountRestocked)
         {
             _logger.Log(LogLevel.Debug, $"Restocking Product: {id}, with {amountRestocked} new items");
             var evnt = new Restock(amountRestocked, DateTime.UtcNow);

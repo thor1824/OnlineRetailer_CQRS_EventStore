@@ -5,13 +5,14 @@ using System.Text.Json;
 using System.Threading.Tasks;
 using EventStore.Client;
 using Microsoft.Extensions.Logging;
-using OnlineRetailer.CustomerApi.Events;
 using OnlineRetailer.CustomerApi.Projectors;
 using OnlineRetailer.CustomerApi.Query.Facade;
 using OnlineRetailer.Domain.Common;
-using OnlineRetailer.Domain.EventStore.Repository.Facade;
-using OnlineRetailer.Domain.EventStore.Streams;
+using OnlineRetailer.Domain.Events;
+using OnlineRetailer.Domain.Events.CustomerEvents;
 using OnlineRetailer.Domain.Exceptions;
+using OnlineRetailer.Domain.Repository.Facade;
+using OnlineRetailer.Domain.Streams;
 
 namespace OnlineRetailer.CustomerApi.Query
 {
@@ -39,7 +40,7 @@ namespace OnlineRetailer.CustomerApi.Query
             _logger.Log(LogLevel.Debug, $"{stream.StreamId}: Applying events and projection current state");
             foreach (var evnt in events)
             {
-                var e = DeserializeEvent(evnt.Event);
+                var e = EventDeserializer.DeserializeCustomerEvent(evnt.Event);
                 projector.ApplyEvent(e);
             }
 
@@ -81,37 +82,8 @@ namespace OnlineRetailer.CustomerApi.Query
 
             var stream = dic[evnt.Event.EventStreamId];
 
-            var e = DeserializeEvent(evnt.Event);
+            var e = EventDeserializer.DeserializeCustomerEvent(evnt.Event);
             stream.ApplyEvent(e);
-        }
-
-        private IEvent DeserializeEvent(EventRecord record)
-        {
-            if (record.EventType == NewCustomer.EventTypeStatic)
-                return JsonSerializer.Deserialize<NewCustomer>(record.Data.ToArray());
-
-            if (record.EventType == RemoveCustomer.EventTypeStatic)
-                return JsonSerializer.Deserialize<RemoveCustomer>(record.Data.ToArray());
-
-            if (record.EventType == ChangeName.EventTypeStatic)
-                return JsonSerializer.Deserialize<ChangeName>(record.Data.ToArray());
-
-            if (record.EventType == ChangeEmail.EventTypeStatic)
-                return JsonSerializer.Deserialize<ChangeEmail>(record.Data.ToArray());
-
-            if (record.EventType == ChangePhone.EventTypeStatic)
-                return JsonSerializer.Deserialize<ChangePhone>(record.Data.ToArray());
-
-            if (record.EventType == ChangeShippingAddress.EventTypeStatic)
-                return JsonSerializer.Deserialize<ChangeShippingAddress>(record.Data.ToArray());
-
-            if (record.EventType == ChangeBillingAddress.EventTypeStatic)
-                return JsonSerializer.Deserialize<ChangeBillingAddress>(record.Data.ToArray());
-
-            if (record.EventType == ChangeCreditStanding.EventTypeStatic)
-                return JsonSerializer.Deserialize<ChangeCreditStanding>(record.Data.ToArray());
-
-            throw new EventTypeNotSupportedException($"Event of type {record.EventType}, not supported");
         }
     }
 }

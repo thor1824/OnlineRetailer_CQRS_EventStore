@@ -1,6 +1,6 @@
-using OnlineRetailer.CustomerApi.Events;
 using OnlineRetailer.CustomerApi.Projections;
 using OnlineRetailer.Domain.Common;
+using OnlineRetailer.Domain.Events.CustomerEvents;
 
 namespace OnlineRetailer.CustomerApi.Projectors
 {
@@ -9,7 +9,7 @@ namespace OnlineRetailer.CustomerApi.Projectors
         public CustomerProjector(BaseStream stream)
         {
             Stream = stream;
-            Projection.CustomerId = stream.Id;
+            Projection.CustomerId = stream.AggregateId;
         }
 
         public BaseStream Stream { get; }

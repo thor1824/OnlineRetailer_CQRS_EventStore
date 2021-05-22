@@ -3,7 +3,14 @@ using Microsoft.AspNetCore.Hosting;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
-using Microsoft.OpenApi.Models;
+using OnlineRetailer.Domain.EventStore;
+using OnlineRetailer.Domain.Repository;
+using OnlineRetailer.Domain.Repository.Facade;
+using OnlineRetailer.OrderApi.BackgroundServices;
+using OnlineRetailer.OrderApi.Command;
+using OnlineRetailer.OrderApi.Command.Facade;
+using OnlineRetailer.OrderApi.Query;
+using OnlineRetailer.OrderApi.Query.Facade;
 
 namespace OnlineRetailer.OrderApi
 {
@@ -19,8 +26,17 @@ namespace OnlineRetailer.OrderApi
         // This method gets called by the runtime. Use this method to add services to the container.
         public void ConfigureServices(IServiceCollection services)
         {
+            services.AddScoped<IOrderCommand, OrderCommand>();
+            services.AddScoped<IOrderQuery, OrderQuery>();
+            services.AddScoped<IEventRepository, EventStoreRepository>();
+
+            // Hosted Services
+            services.AddHostedService<OrderListener>();
+
+            services.AddSingleton(_ => new EventClient(Configuration.GetConnectionString("EventStore")));
+
             services.AddControllers();
-            services.AddSwaggerGen(c => { c.SwaggerDoc("v1", new OpenApiInfo {Title = "OrderApi", Version = "v1"}); });
+            services.AddSwaggerGen();
         }
 
         // This method gets called by the runtime. Use this method to configure the HTTP request pipeline.
@@ -32,7 +48,7 @@ namespace OnlineRetailer.OrderApi
                 app.UseSwagger();
                 app.UseSwaggerUI(c =>
                 {
-                    c.SwaggerEndpoint("/swagger/v1/swagger.json", "OrderApi V1");
+                    c.SwaggerEndpoint("/swagger/v1/swagger.json", "CustomerApi V1");
                     c.RoutePrefix = string.Empty;
                 });
             }

@@ -6,10 +6,11 @@ using System.Threading.Tasks;
 using EventStore.Client;
 using Microsoft.Extensions.Logging;
 using OnlineRetailer.Domain.Common;
-using OnlineRetailer.Domain.EventStore.Repository.Facade;
-using OnlineRetailer.Domain.EventStore.Streams;
+using OnlineRetailer.Domain.Events;
+using OnlineRetailer.Domain.Events.ProductEvents;
 using OnlineRetailer.Domain.Exceptions;
-using OnlineRetailer.ProductsApi.Events;
+using OnlineRetailer.Domain.Repository.Facade;
+using OnlineRetailer.Domain.Streams;
 using OnlineRetailer.ProductsApi.Projectors;
 using OnlineRetailer.ProductsApi.Query.Facades;
 
@@ -40,7 +41,7 @@ namespace OnlineRetailer.ProductsApi.Query
             _logger.Log(LogLevel.Debug, $"{stream.StreamId}: Applying events and projection current state");
             foreach (var evnt in events)
             {
-                var e = DeserializeEvent(evnt.Event);
+                var e = EventDeserializer.DeserializeProductEvent(evnt.Event);
                 projector.ApplyEvent(e);
             }
 
@@ -82,34 +83,8 @@ namespace OnlineRetailer.ProductsApi.Query
 
             var stream = dic[evnt.Event.EventStreamId];
 
-            var e = DeserializeEvent(evnt.Event);
+            var e = EventDeserializer.DeserializeProductEvent(evnt.Event);
             stream.ApplyEvent(e);
-        }
-
-        private IEvent DeserializeEvent(EventRecord record)
-        {
-            if (record.EventType == NewProduct.EventTypeStatic)
-                return JsonSerializer.Deserialize<NewProduct>(record.Data.ToArray());
-
-            if (record.EventType == RemoveProduct.EventTypeStatic)
-                return JsonSerializer.Deserialize<RemoveProduct>(record.Data.ToArray());
-
-            if (record.EventType == ChangeName.EventTypeStatic)
-                return JsonSerializer.Deserialize<ChangeName>(record.Data.ToArray());
-
-            if (record.EventType == ChangeCategory.EventTypeStatic)
-                return JsonSerializer.Deserialize<ChangeCategory>(record.Data.ToArray());
-
-            if (record.EventType == ChangePrice.EventTypeStatic)
-                return JsonSerializer.Deserialize<ChangePrice>(record.Data.ToArray());
-
-            if (record.EventType == Restock.EventTypeStatic)
-                return JsonSerializer.Deserialize<Restock>(record.Data.ToArray());
-
-            if (record.EventType == Reserve.EventTypeStatic)
-                return JsonSerializer.Deserialize<Reserve>(record.Data.ToArray());
-
-            throw new EventTypeNotSupportedException($"Event of type {record.EventType}, not supported");
         }
     }
 }

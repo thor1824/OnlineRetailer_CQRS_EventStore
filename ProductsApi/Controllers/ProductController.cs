@@ -38,7 +38,10 @@ namespace OnlineRetailer.ProductsApi.Controllers
                 var guid = Guid.Parse(id);
                 var product = await _productQuery.ByIdAsync(guid);
                 _logger.Log(LogLevel.Debug, $"product with an id of {id}, was fetched");
-                return Ok(product.Projection);
+                return Ok(new {
+                    Product = product.Projection,
+                    Events = product.Stream.EventStream
+                });
             }
             catch (FormatException fe)
             {
@@ -64,93 +67,14 @@ namespace OnlineRetailer.ProductsApi.Controllers
             {
                 var products = await _productQuery.AllAsync();
                 _logger.Log(LogLevel.Debug, "All product was fetched");
-                return Ok(products.Select(product => product.Projection));
+                return Ok(products.Select(product => new {
+                    Product = product.Projection,
+                    Events = product.Stream.EventStream
+                }));
             }
             catch (Exception e)
             {
                 _logger.Log(LogLevel.Error, e.ToString());
-                return BadRequest(e.Message);
-            }
-        }
-
-        /// <summary>
-        ///     creates a product and assigns it with and id
-        /// </summary>
-        /// <param name="postDto"></param>
-        /// <returns>the created product</returns>
-        [HttpPost]
-        public async Task<IActionResult> Post([FromBody] PostProductDto postDto)
-        {
-            _logger.Log(LogLevel.Debug, "Post Request Received");
-            try
-            {
-                var (wasSuccessAdded, messageAdded, id) = await _productCommand.AddAsync(postDto.Name,
-                    postDto.Category, postDto.Price, postDto.ItemsInStock);
-                if (!wasSuccessAdded)
-                {
-                    _logger.Log(LogLevel.Debug, $"Product was not added because: {messageAdded}");
-                    return BadRequest(messageAdded);
-                }
-
-                _logger.Log(LogLevel.Debug, "Product was successfully created");
-
-                return Created(new Uri($"{Request.Path}/{id.ToString()}", UriKind.Relative), postDto);
-            }
-            catch (Exception e)
-            {
-                _logger.Log(LogLevel.Error, e.ToString());
-                return BadRequest(e.Message);
-            }
-        }
-
-        /// <summary>
-        ///     Update a product
-        /// </summary>
-        /// <param name="id"></param>
-        /// <param name="product"></param>
-        /// <returns></returns>
-        [HttpPut("{id}")]
-        public async Task<IActionResult> Put(string id, [FromBody] PutProductDto product)
-        {
-            _logger.Log(LogLevel.Debug, $"Put Request Received for product: {id}");
-            try
-            {
-                var guid = Guid.Parse(id);
-                if (product.Name != null)
-                {
-                    _logger.Log(LogLevel.Debug, $"Product: {id}, Change Name");
-                    await _productCommand.RenameAsync(guid, product.Name);
-                }
-
-                if (product.Category != null)
-                {
-                    _logger.Log(LogLevel.Debug, $"Product: {id}, Change Category");
-                    await _productCommand.ChangeCategoryAsync(guid, product.Category);
-                }
-
-                if (product.Price.HasValue)
-                {
-                    _logger.Log(LogLevel.Debug, $"Product: {id}, Change Price");
-                    await _productCommand.ChangePriceAsync(guid, product.Price.Value);
-                }
-
-                if (product.IncreaseStockBy.HasValue)
-                {
-                    _logger.Log(LogLevel.Debug, $"Product: {id}, Increase stock");
-                    await _productCommand.IncreaseStuckAsync(guid, product.IncreaseStockBy.Value);
-                }
-
-                if (product.ItemsToReserve.HasValue)
-                {
-                    _logger.Log(LogLevel.Debug, $"Product: {id}, Reserve amount");
-                    await _productCommand.ReserveStuckAsync(guid, product.ItemsToReserve.Value);
-                }
-
-                return NoContent();
-            }
-            catch (Exception e)
-            {
-                _logger.Log(LogLevel.Error, e.Message);
                 return BadRequest(e.Message);
             }
         }
@@ -189,15 +113,168 @@ namespace OnlineRetailer.ProductsApi.Controllers
                 return BadRequest(e.Message);
             }
         }
+
+        /// <summary>
+        ///     creates a product and assigns it with and id
+        /// </summary>
+        /// <param name="newDto"></param>
+        /// <returns>the created product</returns>
+        [HttpPost]
+        public async Task<IActionResult> Post([FromBody] NewProductDto newDto)
+        {
+            _logger.Log(LogLevel.Debug, "Post Request Received");
+            try
+            {
+                var (wasSuccessAdded, messageAdded, id) = await _productCommand.AddAsync(newDto.Name,
+                    newDto.Category, newDto.Price, newDto.ItemsInStock);
+                if (!wasSuccessAdded)
+                {
+                    _logger.Log(LogLevel.Debug, $"Product was not added because: {messageAdded}");
+                    return BadRequest(messageAdded);
+                }
+
+                _logger.Log(LogLevel.Debug, "Product was successfully created");
+
+                return Created(new Uri($"{Request.Path}/{id.ToString()}", UriKind.Relative), newDto);
+            }
+            catch (Exception e)
+            {
+                _logger.Log(LogLevel.Error, e.ToString());
+                return BadRequest(e.Message);
+            }
+        }
+
+        /// <summary>
+        ///     Update a Products Name
+        /// </summary>
+        /// <param name="id">Id of the Product to Change</param>
+        /// <param name="change">Object containing the new value of Name</param>
+        /// <returns></returns>
+        [HttpPut("{id}/[action]")]
+        public async Task<IActionResult> Name(string id, [FromBody] NameChangeDto change)
+        {
+            _logger.Log(LogLevel.Debug, $"Put Request Received for Product: {id}/Name");
+            try
+            {
+                _logger.Log(LogLevel.Debug, $"parsing {id} to guid");
+                var guid = Guid.Parse(id);
+                var (wasSuccess, message) = await _productCommand.RenameAsync(guid, change.Name);
+                if (!wasSuccess)
+                {
+                    _logger.Log(LogLevel.Error, $"Command was not applied. Reason: {message}");
+                    return BadRequest(message);
+                }
+
+                return NoContent();
+            }
+            catch (Exception e)
+            {
+                _logger.Log(LogLevel.Error, e.Message);
+                return BadRequest(e.Message);
+            }
+        }
+
+        /// <summary>
+        ///     Update a Products Category
+        /// </summary>
+        /// <param name="id">Id of the Product to Change</param>
+        /// <param name="change">Object containing the new value of Category</param>
+        /// <returns></returns>
+        [HttpPut("{id}/[action]")]
+        public async Task<IActionResult> Category(string id, [FromBody] CategoryChangeDto change)
+        {
+            _logger.Log(LogLevel.Debug, $"Put Request Received for Product: {id}/Category");
+            try
+            {
+                _logger.Log(LogLevel.Debug, $"parsing {id} to guid");
+                var guid = Guid.Parse(id);
+                var (wasSuccess, message) = await _productCommand.ChangeCategoryAsync(guid, change.Category);
+                if (!wasSuccess)
+                {
+                    _logger.Log(LogLevel.Error, $"Command was not applied. Reason: {message}");
+                    return BadRequest(message);
+                }
+
+                return NoContent();
+            }
+            catch (Exception e)
+            {
+                _logger.Log(LogLevel.Error, e.Message);
+                return BadRequest(e.Message);
+            }
+        }
+
+        /// <summary>
+        ///     Update a Products Price
+        /// </summary>
+        /// <param name="id">Id of the Product to Change</param>
+        /// <param name="change">Object containing the new value of Price</param>
+        /// <returns></returns>
+        [HttpPut("{id}/[action]")]
+        public async Task<IActionResult> Price(string id, [FromBody] PriceChangeDto change)
+        {
+            _logger.Log(LogLevel.Debug, $"Put Request Received for Product: {id}/Price");
+            try
+            {
+                _logger.Log(LogLevel.Debug, $"parsing {id} to guid");
+                var guid = Guid.Parse(id);
+                var (wasSuccess, message) = await _productCommand.ChangePriceAsync(guid, change.Price);
+                if (!wasSuccess)
+                {
+                    _logger.Log(LogLevel.Error, $"Command was not applied. Reason: {message}");
+                    return BadRequest(message);
+                }
+
+                return NoContent();
+            }
+            catch (Exception e)
+            {
+                _logger.Log(LogLevel.Error, e.Message);
+                return BadRequest(e.Message);
+            }
+        }
+
+        /// <summary>
+        ///     Update a Products Stock
+        /// </summary>
+        /// <param name="id">Id of the Product to Change</param>
+        /// <param name="change">Object containing the new value of Category</param>
+        /// <returns></returns>
+        [HttpPut("{id}/[action]")]
+        public async Task<IActionResult> IncreaseStock(string id, [FromBody] RestockDto change)
+        {
+            _logger.Log(LogLevel.Debug, $"Put Request Received for Product: {id}/Stock");
+            try
+            {
+                _logger.Log(LogLevel.Debug, $"parsing {id} to guid");
+                var guid = Guid.Parse(id);
+                var (wasSuccess, message) = await _productCommand.IncreaseStockAsync(guid, change.StockIncrease);
+                if (!wasSuccess)
+                {
+                    _logger.Log(LogLevel.Error, $"Command was not applied. Reason: {message}");
+                    return BadRequest(message);
+                }
+
+                return NoContent();
+            }
+            catch (Exception e)
+            {
+                _logger.Log(LogLevel.Error, e.Message);
+                return BadRequest(e.Message);
+            }
+        }
     }
 
-    public class PostProductDto
-    {
-        public string Name { get; set; }
-        public string Category { get; set; }
-        public decimal Price { get; set; }
-        public int ItemsInStock { get; set; }
-    }
+    public record NewProductDto(string Name, string Category, decimal Price, int ItemsInStock);
+
+    public record NameChangeDto(string Name);
+
+    public record CategoryChangeDto(string Category);
+
+    public record PriceChangeDto(decimal Price);
+
+    public record RestockDto(int StockIncrease);
+
 
     public class PutProductDto
     {

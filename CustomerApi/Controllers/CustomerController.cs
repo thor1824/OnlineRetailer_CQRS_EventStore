@@ -4,7 +4,6 @@ using System.Threading.Tasks;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.Extensions.Logging;
 using OnlineRetailer.CustomerApi.Command.Facade;
-using OnlineRetailer.CustomerApi.Events;
 using OnlineRetailer.CustomerApi.Query.Facade;
 
 namespace OnlineRetailer.CustomerApi.Controllers
@@ -25,21 +24,24 @@ namespace OnlineRetailer.CustomerApi.Controllers
         }
 
         /// <summary>
-        ///     Fetches a product by the id
+        ///     Fetches a Customer by the id
         /// </summary>
         /// <param name="id"></param>
-        /// <returns>a product, with the given id</returns>
+        /// <returns>a Customer, with the given id</returns>
         [HttpGet("{id}")]
         public async Task<IActionResult> GetById(string id)
         {
-            _logger.Log(LogLevel.Debug, $"Get Request received for product: {id}");
+            _logger.Log(LogLevel.Debug, $"Get Request received for Customer: {id}");
             try
             {
                 _logger.Log(LogLevel.Debug, $"parsing {id} to guid");
                 var guid = Guid.Parse(id);
-                var product = await _customerQuery.ByIdAsync(guid);
-                _logger.Log(LogLevel.Debug, $"product with an id of {id}, was fetched");
-                return Ok(product.Projection);
+                var customer = await _customerQuery.ByIdAsync(guid);
+                _logger.Log(LogLevel.Debug, $"Customer with an id of {id}, was fetched");
+                return Ok(new {
+                    Customer = customer.Projection,
+                    Events = customer.Stream.EventStream
+                });
             }
             catch (FormatException fe)
             {
@@ -54,18 +56,21 @@ namespace OnlineRetailer.CustomerApi.Controllers
         }
 
         /// <summary>
-        ///     Fetches All Products
+        ///     Fetches All Customers
         /// </summary>
-        /// <returns>An array og all products</returns>
+        /// <returns>An array og all Customers</returns>
         [HttpGet]
         public async Task<IActionResult> GetAll()
         {
             _logger.Log(LogLevel.Debug, "Get request received");
             try
             {
-                var products = await _customerQuery.AllAsync();
-                _logger.Log(LogLevel.Debug, "All product was fetched");
-                return Ok(products.Select(product => product.Projection));
+                var customers = await _customerQuery.AllAsync();
+                _logger.Log(LogLevel.Debug, "All Customer was fetched");
+                return Ok(customers.Select(customer => new {
+                    Customer = customer.Projection,
+                    Events = customer.Stream.EventStream
+                }));
             }
             catch (Exception e)
             {
@@ -75,10 +80,10 @@ namespace OnlineRetailer.CustomerApi.Controllers
         }
 
         /// <summary>
-        ///     creates a product and assigns it with and id
+        ///     creates a Customer and assigns it with and id
         /// </summary>
         /// <param name="postDto"></param>
-        /// <returns>the created product</returns>
+        /// <returns>the created Customer</returns>
         [HttpPost]
         public async Task<IActionResult> Post([FromBody] CreateDto postDto)
         {
@@ -89,11 +94,11 @@ namespace OnlineRetailer.CustomerApi.Controllers
                     postDto.Phone, postDto.BillingAddress, postDto.ShippingAddress);
                 if (!wasSuccessAdded)
                 {
-                    _logger.Log(LogLevel.Debug, $"Product was not added because: {messageAdded}");
+                    _logger.Log(LogLevel.Debug, $"Customer was not added because: {messageAdded}");
                     return BadRequest(messageAdded);
                 }
 
-                _logger.Log(LogLevel.Debug, "Product was successfully created");
+                _logger.Log(LogLevel.Debug, "Customer was successfully created");
 
                 return Created(new Uri($"{Request.Path}/{id.ToString()}", UriKind.Relative), postDto);
             }
@@ -105,14 +110,14 @@ namespace OnlineRetailer.CustomerApi.Controllers
         }
 
         /// <summary>
-        ///     Deletes a product with the given id
+        ///     Deletes a Customer with the given id
         /// </summary>
         /// <param name="id"></param>
         /// <returns>A NoContent Response</returns>
         [HttpDelete("{id}")]
         public async Task<IActionResult> Delete(string id)
         {
-            _logger.Log(LogLevel.Debug, $"Delete Request Received for product: {id}");
+            _logger.Log(LogLevel.Debug, $"Delete Request Received for Customer: {id}");
             try
             {
                 _logger.Log(LogLevel.Debug, $"parsing {id} to guid");
@@ -120,11 +125,11 @@ namespace OnlineRetailer.CustomerApi.Controllers
                 var (wasSuccess, message) = await _customerCommand.RemoveAsync(guid);
                 if (!wasSuccess)
                 {
-                    _logger.Log(LogLevel.Debug, $"Product was not deleted because: {message}");
+                    _logger.Log(LogLevel.Debug, $"Customer was not deleted because: {message}");
                     return BadRequest(message);
                 }
 
-                _logger.Log(LogLevel.Debug, "Product was successfully Deleted");
+                _logger.Log(LogLevel.Debug, "Customer was successfully Deleted");
                 return NoContent();
             }
             catch (FormatException fe)
@@ -148,12 +153,18 @@ namespace OnlineRetailer.CustomerApi.Controllers
         [HttpPut("{id}/[action]")]
         public async Task<IActionResult> Name(string id, [FromBody] NameChangeDto change)
         {
-            _logger.Log(LogLevel.Debug, $"Put Request Received for product: {id}");
+            _logger.Log(LogLevel.Debug, $"Put Request Received for Customer: {id}/Name");
             try
             {
                 _logger.Log(LogLevel.Debug, $"parsing {id} to guid");
                 var guid = Guid.Parse(id);
                 var (wasSuccess, message) = await _customerCommand.ChangeName(guid, change.NewName);
+                if (!wasSuccess)
+                {
+                    _logger.Log(LogLevel.Error, $"Command on {id} was not applied. Reason: {message}");
+                    return BadRequest(message);
+                }
+
                 return NoContent();
             }
             catch (Exception e)
@@ -172,12 +183,18 @@ namespace OnlineRetailer.CustomerApi.Controllers
         [HttpPut("{id}/[action]")]
         public async Task<IActionResult> Email(string id, [FromBody] EmailChangeDto change)
         {
-            _logger.Log(LogLevel.Debug, $"Put Request Received for product: {id}");
+            _logger.Log(LogLevel.Debug, $"Put Request Received for Customer: {id}/Email");
             try
             {
                 _logger.Log(LogLevel.Debug, $"parsing {id} to guid");
                 var guid = Guid.Parse(id);
                 var (wasSuccess, message) = await _customerCommand.ChangeEmail(guid, change.NewEmail);
+                if (!wasSuccess)
+                {
+                    _logger.Log(LogLevel.Error, $"Command on {id} was not applied. Reason: {message}");
+                    return BadRequest(message);
+                }
+
                 return NoContent();
             }
             catch (Exception e)
@@ -196,12 +213,17 @@ namespace OnlineRetailer.CustomerApi.Controllers
         [HttpPut("{id}/[action]")]
         public async Task<IActionResult> Phone(string id, [FromBody] PhoneChangeDto change)
         {
-            _logger.Log(LogLevel.Debug, $"Put Request Received for product: {id}");
+            _logger.Log(LogLevel.Debug, $"Put Request Received for Customer: {id}/Phone");
             try
             {
                 _logger.Log(LogLevel.Debug, $"parsing {id} to guid");
                 var guid = Guid.Parse(id);
                 var (wasSuccess, message) = await _customerCommand.ChangePhone(guid, change.NewPhone);
+                if (!wasSuccess)
+                {
+                    _logger.Log(LogLevel.Error, $"Command on {id} was not applied. Reason: {message}");
+                    return BadRequest(message);
+                }
 
                 return NoContent();
             }
@@ -221,12 +243,17 @@ namespace OnlineRetailer.CustomerApi.Controllers
         [HttpPut("{id}/[action]")]
         public async Task<IActionResult> BillingAddress(string id, [FromBody] BillingAddressChangeDto change)
         {
-            _logger.Log(LogLevel.Debug, $"Put Request Received for product: {id}");
+            _logger.Log(LogLevel.Debug, $"Put Request Received for Customer: {id}/BillingAddress");
             try
             {
                 _logger.Log(LogLevel.Debug, $"parsing {id} to guid");
                 var guid = Guid.Parse(id);
                 var (wasSuccess, message) = await _customerCommand.ChangeBillingAddress(guid, change.NewBillingAddress);
+                if (!wasSuccess)
+                {
+                    _logger.Log(LogLevel.Error, $"Command on {id} was not applied. Reason: {message}");
+                    return BadRequest(message);
+                }
 
                 return NoContent();
             }
@@ -246,13 +273,18 @@ namespace OnlineRetailer.CustomerApi.Controllers
         [HttpPut("{id}/[action]")]
         public async Task<IActionResult> ShippingAddress(string id, [FromBody] ShippingAddressChangeDto change)
         {
-            _logger.Log(LogLevel.Debug, $"Put Request Received for product: {id}");
+            _logger.Log(LogLevel.Debug, $"Put Request Received for Customer: {id}/ShippingAddress");
             try
             {
                 _logger.Log(LogLevel.Debug, $"parsing {id} to guid");
                 var guid = Guid.Parse(id);
                 var (wasSuccess, message) =
                     await _customerCommand.ChangeShippingAddress(guid, change.NewShippingAddress);
+                if (!wasSuccess)
+                {
+                    _logger.Log(LogLevel.Error, $"Command on {id} was not applied. Reason: {message}");
+                    return BadRequest(message);
+                }
 
                 return NoContent();
             }
@@ -276,13 +308,4 @@ namespace OnlineRetailer.CustomerApi.Controllers
     public record BillingAddressChangeDto(string NewBillingAddress);
 
     public record ShippingAddressChangeDto(string NewShippingAddress);
-
-    public class PutProductDto
-    {
-        public string Name { get; set; }
-        public string Category { get; set; }
-        public decimal? Price { get; set; }
-        public int? IncreaseStockBy { get; set; }
-        public int? ItemsToReserve { get; set; }
-    }
 }

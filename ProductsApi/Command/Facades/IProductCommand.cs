@@ -10,7 +10,7 @@ namespace OnlineRetailer.ProductsApi.Command.Facades
         Task<(bool wasSucces, string message, Guid guid)> AddAsync(string name, string category, decimal price,
             int itemsInStock);
 
-        Task<(bool wasSucces, string message)> IncreaseStuckAsync(Guid id, int amountRestocked);
+        Task<(bool wasSucces, string message)> IncreaseStockAsync(Guid id, int amountRestocked);
 
         Task<(bool wasSucces, string message)> ReserveStuckAsync(Guid id, int amountReserved);
 

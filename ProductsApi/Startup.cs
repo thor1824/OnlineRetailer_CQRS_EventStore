@@ -4,8 +4,9 @@ using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
 using OnlineRetailer.Domain.EventStore;
-using OnlineRetailer.Domain.EventStore.Repository;
-using OnlineRetailer.Domain.EventStore.Repository.Facade;
+using OnlineRetailer.Domain.Repository;
+using OnlineRetailer.Domain.Repository.Facade;
+using OnlineRetailer.ProductsApi.BackgroundServices;
 using OnlineRetailer.ProductsApi.Command;
 using OnlineRetailer.ProductsApi.Command.Facades;
 using OnlineRetailer.ProductsApi.Query;
@@ -27,6 +28,9 @@ namespace OnlineRetailer.ProductsApi
             services.AddScoped<IProductCommand, ProductCommand>();
             services.AddScoped<IProductQuery, ProductQuery>();
             services.AddScoped<IEventRepository, EventStoreRepository>();
+
+            // Hosted Services
+            services.AddHostedService<ProductListener>();
 
             services.AddSingleton(_ => new EventClient(Configuration.GetConnectionString("EventStore")));
 

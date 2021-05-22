@@ -1,6 +1,6 @@
 using OnlineRetailer.Domain.Common;
+using OnlineRetailer.Domain.Events.ProductEvents;
 using OnlineRetailer.Domain.Exceptions;
-using OnlineRetailer.ProductsApi.Events;
 using OnlineRetailer.ProductsApi.Projections;
 
 namespace OnlineRetailer.ProductsApi.Projectors
@@ -10,7 +10,7 @@ namespace OnlineRetailer.ProductsApi.Projectors
         public StandardProductProjector(BaseStream stream)
         {
             Stream = stream;
-            Projection.Id = stream.Id;
+            Projection.Id = stream.AggregateId;
         }
 
         public BaseStream Stream { get; }

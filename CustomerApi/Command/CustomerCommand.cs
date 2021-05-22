@@ -2,11 +2,11 @@ using System;
 using System.Threading.Tasks;
 using Microsoft.Extensions.Logging;
 using OnlineRetailer.CustomerApi.Command.Facade;
-using OnlineRetailer.CustomerApi.Events;
 using OnlineRetailer.Domain.Common;
-using OnlineRetailer.Domain.EventStore.Repository.Facade;
-using OnlineRetailer.Domain.EventStore.Streams;
+using OnlineRetailer.Domain.Events.CustomerEvents;
 using OnlineRetailer.Domain.Exceptions;
+using OnlineRetailer.Domain.Repository.Facade;
+using OnlineRetailer.Domain.Streams;
 
 namespace OnlineRetailer.CustomerApi.Command
 {

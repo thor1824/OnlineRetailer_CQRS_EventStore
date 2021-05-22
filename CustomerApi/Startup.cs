@@ -3,13 +3,14 @@ using Microsoft.AspNetCore.Hosting;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
+using OnlineRetailer.CustomerApi.BackgroundServices;
 using OnlineRetailer.CustomerApi.Command;
 using OnlineRetailer.CustomerApi.Command.Facade;
 using OnlineRetailer.CustomerApi.Query;
 using OnlineRetailer.CustomerApi.Query.Facade;
 using OnlineRetailer.Domain.EventStore;
-using OnlineRetailer.Domain.EventStore.Repository;
-using OnlineRetailer.Domain.EventStore.Repository.Facade;
+using OnlineRetailer.Domain.Repository;
+using OnlineRetailer.Domain.Repository.Facade;
 
 namespace OnlineRetailer.CustomerApi
 {
@@ -29,6 +30,9 @@ namespace OnlineRetailer.CustomerApi
             services.AddScoped<ICustomerCommand, CustomerCommand>();
             services.AddScoped<ICustomerQuery, CustomerQuery>();
             services.AddScoped<IEventRepository, EventStoreRepository>();
+
+            // Hosted Services
+            services.AddHostedService<CustomerListener>();
 
             services.AddSingleton(_ => new EventClient(Configuration.GetConnectionString("EventStore")));
 
