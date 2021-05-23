@@ -1,14 +1,14 @@
 using System;
 using System.Collections.Generic;
 using System.Threading.Tasks;
-using OnlineRetailer.OrderApi.Projectors;
+using OnlineRetailer.OrderApi.Projections;
 
 namespace OnlineRetailer.OrderApi.Query.Facade
 {
     public interface IOrderQuery
     {
-        Task<OrderProjector> ByIdAsync(Guid orderId);
-        Task<IEnumerable<OrderProjector>> AllAsync();
-        Task<IEnumerable<OrderProjector>> ByCustomerAsync(Guid customerId);
+        Task<OrderProjection> ByIdAsync(Guid orderId);
+        Task<IEnumerable<OrderProjection>> AllAsync();
+        Task<IEnumerable<OrderProjection>> ByCustomerAsync(Guid customerId);
     }
 }

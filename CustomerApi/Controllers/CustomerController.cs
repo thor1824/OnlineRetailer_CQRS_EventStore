@@ -38,8 +38,9 @@ namespace OnlineRetailer.CustomerApi.Controllers
                 var guid = Guid.Parse(id);
                 var customer = await _customerQuery.ByIdAsync(guid);
                 _logger.Log(LogLevel.Debug, $"Customer with an id of {id}, was fetched");
-                return Ok(new {
-                    Customer = customer.Projection,
+                return Ok(new
+                {
+                    Customer = customer.Aggregate,
                     Events = customer.Stream.EventStream
                 });
             }
@@ -67,8 +68,9 @@ namespace OnlineRetailer.CustomerApi.Controllers
             {
                 var customers = await _customerQuery.AllAsync();
                 _logger.Log(LogLevel.Debug, "All Customer was fetched");
-                return Ok(customers.Select(customer => new {
-                    Customer = customer.Projection,
+                return Ok(customers.Select(customer => new
+                {
+                    Customer = customer.Aggregate,
                     Events = customer.Stream.EventStream
                 }));
             }

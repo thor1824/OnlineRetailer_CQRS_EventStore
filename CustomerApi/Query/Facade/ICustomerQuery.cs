@@ -1,13 +1,13 @@
 using System;
 using System.Collections.Generic;
 using System.Threading.Tasks;
-using OnlineRetailer.CustomerApi.Projectors;
+using OnlineRetailer.CustomerApi.Projections;
 
 namespace OnlineRetailer.CustomerApi.Query.Facade
 {
     public interface ICustomerQuery
     {
-        Task<CustomerProjector> ByIdAsync(Guid id);
-        Task<IEnumerable<CustomerProjector>> AllAsync();
+        Task<CustomerProjection> ByIdAsync(Guid id);
+        Task<IEnumerable<CustomerProjection>> AllAsync();
     }
 }

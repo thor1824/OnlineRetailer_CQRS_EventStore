@@ -35,10 +35,9 @@ namespace OnlineRetailer.Domain.Repository
 
         public async Task<List<ResolvedEvent>> GetAllByStreamIdAsync(string streamId)
         {
-            
             var exists = await ExistsAsync(streamId);
             if (!exists) throw new EventStreamNotFound(streamId);
-            
+
             var result = _eventStoreClient.ReadStreamAsync(
                 Direction.Forwards,
                 streamId,

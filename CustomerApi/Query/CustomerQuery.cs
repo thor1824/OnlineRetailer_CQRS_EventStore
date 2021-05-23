@@ -1,16 +1,12 @@
 using System;
 using System.Collections.Generic;
 using System.Linq;
-using System.Text.Json;
 using System.Threading.Tasks;
 using EventStore.Client;
 using Microsoft.Extensions.Logging;
-using OnlineRetailer.CustomerApi.Projectors;
+using OnlineRetailer.CustomerApi.Projections;
 using OnlineRetailer.CustomerApi.Query.Facade;
-using OnlineRetailer.Domain.Common;
 using OnlineRetailer.Domain.Events;
-using OnlineRetailer.Domain.Events.CustomerEvents;
-using OnlineRetailer.Domain.Exceptions;
 using OnlineRetailer.Domain.Repository.Facade;
 using OnlineRetailer.Domain.Streams;
 
@@ -27,12 +23,12 @@ namespace OnlineRetailer.CustomerApi.Query
             _eventRepository = eventRepository;
         }
 
-        public async Task<CustomerProjector> ByIdAsync(Guid id)
+        public async Task<CustomerProjection> ByIdAsync(Guid id)
         {
             _logger.Log(LogLevel.Debug, $"Querying Customer by Id: {id.ToString()}");
 
             var stream = new CustomerStream(id);
-            var projector = new CustomerProjector(stream);
+            var projector = new CustomerProjection(stream);
 
             _logger.Log(LogLevel.Debug, $"{stream.StreamId}: Fetching Events from stream");
             var events = await _eventRepository.GetAllByStreamIdAsync(stream.StreamId);
@@ -48,10 +44,10 @@ namespace OnlineRetailer.CustomerApi.Query
             return projector;
         }
 
-        public async Task<IEnumerable<CustomerProjector>> AllAsync()
+        public async Task<IEnumerable<CustomerProjection>> AllAsync()
         {
             _logger.Log(LogLevel.Debug, "Querying all Products");
-            var dic = new Dictionary<string, CustomerProjector>();
+            var dic = new Dictionary<string, CustomerProjection>();
 
             _logger.Log(LogLevel.Debug, "Fetching all Events");
             var events = await _eventRepository.GetAllAsync();
@@ -62,19 +58,19 @@ namespace OnlineRetailer.CustomerApi.Query
             return dic.Values.ToList();
         }
 
-        private void HandleEvent(ResolvedEvent evnt, Dictionary<string, CustomerProjector> dic)
+        private void HandleEvent(ResolvedEvent evnt, Dictionary<string, CustomerProjection> dic)
         {
             _logger.Log(LogLevel.Debug, $"Handling event from stream: {evnt.Event.EventStreamId}");
             if (evnt.Event.EventStreamId.StartsWith(CustomerStream.STREAM_PREFIX)) HandleCustomerEvent(evnt, dic);
         }
 
-        private void HandleCustomerEvent(ResolvedEvent evnt, Dictionary<string, CustomerProjector> dic)
+        private void HandleCustomerEvent(ResolvedEvent evnt, Dictionary<string, CustomerProjection> dic)
         {
             if (!dic.ContainsKey(evnt.Event.EventStreamId))
             {
                 var id = Guid.Parse(evnt.Event.EventStreamId.Replace(CustomerStream.STREAM_PREFIX, ""));
                 var newStream = new CustomerStream(id);
-                var newProjector = new CustomerProjector(newStream);
+                var newProjector = new CustomerProjection(newStream);
 
                 dic.Add(evnt.Event.EventStreamId, newProjector);
             }

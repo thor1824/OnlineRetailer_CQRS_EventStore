@@ -6,31 +6,29 @@ using EventStore.Client;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
 using Microsoft.Extensions.Logging;
-using OnlineRetailer.Domain.Events;
 using OnlineRetailer.Domain.Events.OrderEvents;
-using OnlineRetailer.Domain.Events.ProductEvents;
 using OnlineRetailer.Domain.EventStore;
 using OnlineRetailer.Domain.Exceptions;
 using OnlineRetailer.Domain.Models;
 using OnlineRetailer.Domain.Repository.Facade;
-using OnlineRetailer.Domain.Streams;
-using OnlineRetailer.ProductsApi.Projections;
+using OnlineRetailer.ProductsApi.Aggregates;
 using OnlineRetailer.ProductsApi.Query.Facades;
 
 namespace OnlineRetailer.ProductsApi.BackgroundServices
 {
     public class ProductListener : BackgroundService
     {
+        private readonly EventStoreClient _eventStoreClient;
+        private readonly ILogger<ProductListener> _logger;
+
+        private readonly IServiceProvider _provider;
+
         public ProductListener(IServiceProvider provider, EventClient eventClient, ILogger<ProductListener> logger)
         {
             _provider = provider;
             _logger = logger;
             _eventStoreClient = eventClient.Client;
         }
-
-        private readonly IServiceProvider _provider;
-        private readonly EventStoreClient _eventStoreClient;
-        private readonly ILogger<ProductListener> _logger;
 
 
         protected override Task ExecuteAsync(CancellationToken stoppingToken)
@@ -43,7 +41,7 @@ namespace OnlineRetailer.ProductsApi.BackgroundServices
 
                 _eventStoreClient.SubscribeToAllAsync(
                     Position.End,
-                    eventAppeared: async (subscription, evnt, cancellationToken) =>
+                    async (subscription, evnt, cancellationToken) =>
                     {
                         _logger.Log(LogLevel.Debug,
                             $"DReceived event {evnt.Event.ContentType}@{evnt.OriginalStreamId}");
@@ -103,13 +101,13 @@ namespace OnlineRetailer.ProductsApi.BackgroundServices
 
         private async Task<StockValidationStatus> ProductInStockValidation(OrderLine line, IProductQuery query)
         {
-            ProductProjection product;
+            Product product;
 
 
             try
             {
                 var projector = await query.ByIdAsync(line.ProductId);
-                product = projector.Projection;
+                product = projector.Aggregate;
             }
             catch (EventStreamNotFound)
             {

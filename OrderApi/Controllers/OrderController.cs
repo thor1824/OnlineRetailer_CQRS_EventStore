@@ -37,10 +37,10 @@ namespace OnlineRetailer.OrderApi.Controllers
                 _logger.Log(LogLevel.Debug, $"Customer with an id of {id}, was fetched");
                 return Ok(new
                 {
-                    RawOrder = orderProjector.Projection,
-                    OrderStatus = orderProjector.Projection.OrderStatus.ToString(),
-                    CustomerValidationStatus = orderProjector.Projection.CustomerValidationStatus.ToString(),
-                    StockValidationStatus = orderProjector.Projection.StockValidationStatus.ToString()
+                    RawOrder = orderProjector.Aggregate,
+                    OrderStatus = orderProjector.Aggregate.OrderStatus.ToString(),
+                    CustomerValidationStatus = orderProjector.Aggregate.CustomerValidationStatus.ToString(),
+                    StockValidationStatus = orderProjector.Aggregate.StockValidationStatus.ToString()
                 });
             }
             catch (Exception e)
@@ -60,10 +60,10 @@ namespace OnlineRetailer.OrderApi.Controllers
                 _logger.Log(LogLevel.Debug, "All Customer was fetched");
                 return Ok(orderProjectors.Select(orderProjector => new
                 {
-                    RawOrder = orderProjector.Projection,
-                    OrderStatus = orderProjector.Projection.OrderStatus.ToString(),
-                    CustomerValidationStatus = orderProjector.Projection.CustomerValidationStatus.ToString(),
-                    StockValidationStatus = orderProjector.Projection.StockValidationStatus.ToString(),
+                    RawOrder = orderProjector.Aggregate,
+                    OrderStatus = orderProjector.Aggregate.OrderStatus.ToString(),
+                    CustomerValidationStatus = orderProjector.Aggregate.CustomerValidationStatus.ToString(),
+                    StockValidationStatus = orderProjector.Aggregate.StockValidationStatus.ToString(),
                     events = orderProjector.Stream.EventStream
                 }));
             }
@@ -86,10 +86,10 @@ namespace OnlineRetailer.OrderApi.Controllers
                 _logger.Log(LogLevel.Debug, $"All Orders of Customer {customerId} was fetched");
                 return Ok(orderProjectors.Select(orderProjector => new
                 {
-                    RawOrder = orderProjector.Projection,
-                    OrderStatus = orderProjector.Projection.OrderStatus.ToString(),
-                    CustomerValidationStatus = orderProjector.Projection.CustomerValidationStatus.ToString(),
-                    StockValidationStatus = orderProjector.Projection.StockValidationStatus.ToString()
+                    RawOrder = orderProjector.Aggregate,
+                    OrderStatus = orderProjector.Aggregate.OrderStatus.ToString(),
+                    CustomerValidationStatus = orderProjector.Aggregate.CustomerValidationStatus.ToString(),
+                    StockValidationStatus = orderProjector.Aggregate.StockValidationStatus.ToString()
                 }));
             }
             catch (Exception e)

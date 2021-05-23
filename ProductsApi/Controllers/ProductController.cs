@@ -38,8 +38,9 @@ namespace OnlineRetailer.ProductsApi.Controllers
                 var guid = Guid.Parse(id);
                 var product = await _productQuery.ByIdAsync(guid);
                 _logger.Log(LogLevel.Debug, $"product with an id of {id}, was fetched");
-                return Ok(new {
-                    Product = product.Projection,
+                return Ok(new
+                {
+                    Product = product.Aggregate,
                     Events = product.Stream.EventStream
                 });
             }
@@ -67,8 +68,9 @@ namespace OnlineRetailer.ProductsApi.Controllers
             {
                 var products = await _productQuery.AllAsync();
                 _logger.Log(LogLevel.Debug, "All product was fetched");
-                return Ok(products.Select(product => new {
-                    Product = product.Projection,
+                return Ok(products.Select(product => new
+                {
+                    Product = product.Aggregate,
                     Events = product.Stream.EventStream
                 }));
             }

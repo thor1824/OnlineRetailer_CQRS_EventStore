@@ -1,5 +1,4 @@
 ﻿using System;
-using System.Text.Json;
 using System.Threading;
 using System.Threading.Tasks;
 using EventStore.Client;
@@ -19,16 +18,17 @@ namespace OnlineRetailer.OrderApi.BackgroundServices
 {
     public class OrderListener : BackgroundService
     {
+        private readonly EventStoreClient _eventStoreClient;
+        private readonly ILogger<OrderListener> _logger;
+
+        private readonly IServiceProvider _provider;
+
         public OrderListener(IServiceProvider provider, EventClient eventClient, ILogger<OrderListener> logger)
         {
             _provider = provider;
             _logger = logger;
             _eventStoreClient = eventClient.Client;
         }
-
-        private readonly IServiceProvider _provider;
-        private readonly EventStoreClient _eventStoreClient;
-        private readonly ILogger<OrderListener> _logger;
 
 
         protected override Task ExecuteAsync(CancellationToken stoppingToken)
@@ -40,7 +40,7 @@ namespace OnlineRetailer.OrderApi.BackgroundServices
 
                 _eventStoreClient.SubscribeToAllAsync(
                     Position.End,
-                    eventAppeared: async (subscription, evnt, cancellationToken) =>
+                    async (subscription, evnt, cancellationToken) =>
                     {
                         _logger.Log(LogLevel.Debug,
                             $"Received event {evnt.Event.EventType}@{evnt.OriginalStreamId}");
@@ -54,7 +54,7 @@ namespace OnlineRetailer.OrderApi.BackgroundServices
 
                 _eventStoreClient.SubscribeToAllAsync(
                     Position.End,
-                    eventAppeared: async (subscription, evnt, cancellationToken) =>
+                    async (subscription, evnt, cancellationToken) =>
                     {
                         _logger.Log(LogLevel.Debug,
                             $"Received event {evnt.Event.EventType}@{evnt.OriginalStreamId}");
@@ -68,7 +68,7 @@ namespace OnlineRetailer.OrderApi.BackgroundServices
 
                 _eventStoreClient.SubscribeToAllAsync(
                     Position.End,
-                    eventAppeared: async (subscription, evnt, cancellationToken) =>
+                    async (subscription, evnt, cancellationToken) =>
                     {
                         _logger.Log(LogLevel.Debug,
                             $"Received event {evnt.Event.EventType}@{evnt.OriginalStreamId}");
@@ -82,7 +82,7 @@ namespace OnlineRetailer.OrderApi.BackgroundServices
 
                 _eventStoreClient.SubscribeToAllAsync(
                     Position.End,
-                    eventAppeared: async (subscription, evnt, cancellationToken) =>
+                    async (subscription, evnt, cancellationToken) =>
                     {
                         _logger.Log(LogLevel.Debug,
                             $"Received event {evnt.Event.EventType}@{evnt.OriginalStreamId}");
@@ -110,7 +110,7 @@ namespace OnlineRetailer.OrderApi.BackgroundServices
                 var orderId = Guid.Parse(orderStreamId.Replace(OrderStream.STREAM_PREFIX, ""));
 
                 var projector = await orderQuery.ByIdAsync(orderId);
-                var order = projector.Projection;
+                var order = projector.Aggregate;
 
                 foreach (var line in order.OrderLines)
                 {
@@ -131,7 +131,7 @@ namespace OnlineRetailer.OrderApi.BackgroundServices
                 var id = Guid.Parse(orderStreamId.Replace(OrderStream.STREAM_PREFIX, ""));
                 var projector = await orderQuery.ByIdAsync(id);
 
-                var order = projector.Projection;
+                var order = projector.Aggregate;
                 var orderCommand = scope.ServiceProvider.GetService<IOrderCommand>();
                 await orderCommand.WaitingForStockValidation(id, order.OrderLines);
             }
@@ -145,7 +145,7 @@ namespace OnlineRetailer.OrderApi.BackgroundServices
                 var id = Guid.Parse(orderStreamId.Replace(OrderStream.STREAM_PREFIX, ""));
                 var projector = await orderQuery.ByIdAsync(id);
 
-                var order = projector.Projection;
+                var order = projector.Aggregate;
                 var orderCommand = scope.ServiceProvider.GetService<IOrderCommand>();
                 await orderCommand.WaitingForCustomerValidation(id, order.CustomerId);
             }
@@ -153,10 +153,7 @@ namespace OnlineRetailer.OrderApi.BackgroundServices
 
         private async Task HandleInStockEvent(string orderStreamId, EventRecord eventRecord)
         {
-            if (eventRecord.EventType == WaitingForIsInStockValidation.EVENT_TYPE)
-            {
-                return;
-            }
+            if (eventRecord.EventType == WaitingForIsInStockValidation.EVENT_TYPE) return;
 
             if (eventRecord.EventType == AllItemsIsInStock.EVENT_TYPE)
             {
@@ -169,10 +166,7 @@ namespace OnlineRetailer.OrderApi.BackgroundServices
 
         private async Task HandleCustomerEvent(string orderStreamId, EventRecord eventRecord)
         {
-            if (eventRecord.EventType == WaitingForCustomerValidation.EVENT_TYPE)
-            {
-                return;
-            }
+            if (eventRecord.EventType == WaitingForCustomerValidation.EVENT_TYPE) return;
 
             if (eventRecord.EventType == CustomerValid.EVENT_TYPE)
             {
@@ -190,13 +184,11 @@ namespace OnlineRetailer.OrderApi.BackgroundServices
                 var orderQuery = scope.ServiceProvider.GetService<IOrderQuery>();
                 var id = Guid.Parse(orderStreamId.Replace(OrderStream.STREAM_PREFIX, ""));
                 var projector = await orderQuery.ByIdAsync(id);
-                var order = projector.Projection;
+                var order = projector.Aggregate;
                 if (order.OrderStatus == OrderStatus.Cancelled ||
                     order.OrderStatus == OrderStatus.Confirmed ||
                     order.OrderStatus == OrderStatus.Rejected)
-                {
                     return;
-                }
 
                 if (order.CustomerValidationStatus == CustomerValidationStatus.CustomerValid &&
                     order.StockValidationStatus == StockValidationStatus.AllItemsIsInStock)

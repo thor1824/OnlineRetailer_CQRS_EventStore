@@ -1,9 +1,9 @@
 namespace OnlineRetailer.Domain.Common
 {
-    public interface IProjector<TProjection>
+    public interface IProjection<TProjection>
     {
         BaseStream Stream { get; }
-        TProjection Projection { get; }
+        TProjection Aggregate { get; }
 
         void ApplyEvent(IEvent evnt);
     }

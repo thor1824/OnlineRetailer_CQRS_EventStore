@@ -36,7 +36,7 @@ namespace OnlineRetailer.OrderApi.Command
             var submitEvnt = new SubmitOrder(customerId, orderLines, DateTime.UtcNow);
 
             await ApplyNewAsync(newId, submitEvnt);
-            
+
             var (isConfirmed, statusMessage) = await IsConfirmed(newId, cancellationToken);
             return !isConfirmed ? (false, statusMessage, newId) : (true, "Order was placed", newId);
         }
@@ -68,10 +68,11 @@ namespace OnlineRetailer.OrderApi.Command
             return await ApplyChangeAsync(id, rejectEvnt);
         }
 
-        public async Task<(bool wasSucces, string message)> WaitingForStockValidation(Guid orderId, IList<OrderLine> orderLines)
+        public async Task<(bool wasSucces, string message)> WaitingForStockValidation(Guid orderId,
+            IList<OrderLine> orderLines)
         {
             _logger.Log(LogLevel.Debug, $"Marking Order: {orderId.ToString()} for StockValidation");
-            
+
             _logger.Log(LogLevel.Debug, $"Trying to Reject, Order: {orderId.ToString()}");
 
             var stockValidation = new WaitingForIsInStockValidation(orderLines, DateTime.UtcNow);
@@ -100,7 +101,7 @@ namespace OnlineRetailer.OrderApi.Command
                 if (cancellationToken.IsCancellationRequested) return (false, "Operation Was Canceled");
 
                 var projector = await _orderQuery.ByIdAsync(newId);
-                var order = projector.Projection;
+                var order = projector.Aggregate;
                 if (order.OrderStatus != OrderStatus.Submitted)
                 {
                     isValidationDone = true;

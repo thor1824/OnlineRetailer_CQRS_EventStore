@@ -9,7 +9,7 @@ using ChangeName = OnlineRetailer.Domain.Events.CustomerEvents.ChangeName;
 
 namespace OnlineRetailer.Domain.Events
 {
-    public static class  EventDeserializer
+    public static class EventDeserializer
     {
         public static IEvent DeserializeCustomerEvent(EventRecord record)
         {
@@ -39,60 +39,60 @@ namespace OnlineRetailer.Domain.Events
 
             throw new EventTypeNotSupportedException($"Event of type {record.EventType}, not supported");
         }
-        
+
         public static IEvent DeserializeOrderEvent(EventRecord record)
         {
             if (record.EventType == SubmitOrder.EVENT_TYPE)
                 return JsonSerializer.Deserialize<SubmitOrder>(record.Data.ToArray());
-            
+
             if (record.EventType == WaitingForCustomerValidation.EVENT_TYPE)
                 return JsonSerializer.Deserialize<WaitingForCustomerValidation>(record.Data.ToArray());
-            
+
             if (record.EventType == CustomerValid.EVENT_TYPE)
                 return JsonSerializer.Deserialize<CustomerValid>(record.Data.ToArray());
-            
+
             if (record.EventType == CustomerBadCredit.EVENT_TYPE)
                 return JsonSerializer.Deserialize<CustomerBadCredit>(record.Data.ToArray());
-            
+
             if (record.EventType == CustomerNotFound.EVENT_TYPE)
                 return JsonSerializer.Deserialize<CustomerNotFound>(record.Data.ToArray());
-            
+
             if (record.EventType == WaitingForIsInStockValidation.EVENT_TYPE)
                 return JsonSerializer.Deserialize<WaitingForIsInStockValidation>(record.Data.ToArray());
-            
+
             if (record.EventType == AllItemsIsInStock.EVENT_TYPE)
                 return JsonSerializer.Deserialize<AllItemsIsInStock>(record.Data.ToArray());
-            
+
             if (record.EventType == NotInStock.EVENT_TYPE)
                 return JsonSerializer.Deserialize<NotInStock>(record.Data.ToArray());
-            
+
             if (record.EventType == DoesNotExist.EVENT_TYPE)
                 return JsonSerializer.Deserialize<DoesNotExist>(record.Data.ToArray());
-            
+
             if (record.EventType == PartialInStock.EVENT_TYPE)
                 return JsonSerializer.Deserialize<PartialInStock>(record.Data.ToArray());
-            
+
             if (record.EventType == OrderConfirmed.EVENT_TYPE)
                 return JsonSerializer.Deserialize<OrderConfirmed>(record.Data.ToArray());
-            
+
             if (record.EventType == OrderRejected.EVENT_TYPE)
                 return JsonSerializer.Deserialize<OrderRejected>(record.Data.ToArray());
-            
+
             if (record.EventType == OrderCancelled.EVENT_TYPE)
                 return JsonSerializer.Deserialize<OrderCancelled>(record.Data.ToArray());
-            
+
             if (record.EventType == OrderShipped.EVENT_TYPE)
                 return JsonSerializer.Deserialize<OrderShipped>(record.Data.ToArray());
-            
+
             if (record.EventType == OrderPaid.EVENT_TYPE)
                 return JsonSerializer.Deserialize<WaitingForCustomerValidation>(record.Data.ToArray());
-            
+
             if (record.EventType == OrderUnpaid.EVENT_TYPE)
                 return JsonSerializer.Deserialize<OrderUnpaid>(record.Data.ToArray());
 
             throw new EventTypeNotSupportedException($"Event of type {record.EventType}, not supported");
         }
-        
+
         public static IEvent DeserializeProductEvent(EventRecord record)
         {
             if (record.EventType == NewProduct.EVENT_TYPE)
