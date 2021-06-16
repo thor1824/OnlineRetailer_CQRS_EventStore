@@ -41,7 +41,7 @@ namespace OnlineRetailer.OrderApi.Command
             return !isConfirmed ? (false, statusMessage, newId) : (true, "Order was placed", newId);
         }
 
-        public async Task<(bool wasSuccess, string message)> CancelOrderAsync(Guid id)
+        public async Task<(bool wasSuccess, string message)> CancelAsync(Guid id)
         {
             _logger.Log(LogLevel.Debug, $"Trying to cancel, Order: {id.ToString()}");
 

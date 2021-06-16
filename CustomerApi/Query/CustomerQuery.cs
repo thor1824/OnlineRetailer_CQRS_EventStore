@@ -45,8 +45,7 @@ namespace OnlineRetailer.CustomerApi.Query
         }
 
         public async Task<IEnumerable<CustomerProjection>> AllAsync()
-        {
-            _logger.Log(LogLevel.Debug, "Querying all Products");
+        { _logger.Log(LogLevel.Debug, "Querying all Products");
             var dic = new Dictionary<string, CustomerProjection>();
 
             _logger.Log(LogLevel.Debug, "Fetching all Events");

@@ -25,8 +25,8 @@ namespace OnlineRetailer.Domain.Events
             if (record.EventType == ChangeEmail.EVENT_TYPE)
                 return JsonSerializer.Deserialize<ChangeEmail>(record.Data.ToArray());
 
-            if (record.EventType == ChangePhone.EVENT_TYPE)
-                return JsonSerializer.Deserialize<ChangePhone>(record.Data.ToArray());
+            if (record.EventType == ChangePhoneNumber.EVENT_TYPE)
+                return JsonSerializer.Deserialize<ChangePhoneNumber>(record.Data.ToArray());
 
             if (record.EventType == ChangeShippingAddress.EVENT_TYPE)
                 return JsonSerializer.Deserialize<ChangeShippingAddress>(record.Data.ToArray());

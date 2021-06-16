@@ -61,7 +61,7 @@ namespace OnlineRetailer.CustomerApi.Command
         public async Task<(bool wasSucces, string message)> ChangePhone(Guid id, string newPhone)
         {
             _logger.Log(LogLevel.Debug, $"Alter Customer: {id}, Change phone number to {newPhone}");
-            var evnt = new ChangePhone(newPhone, DateTime.UtcNow);
+            var evnt = new ChangePhoneNumber(newPhone, DateTime.UtcNow);
 
             return await ApplyChangeAsync(id, evnt);
         }

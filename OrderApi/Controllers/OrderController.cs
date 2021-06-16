@@ -123,6 +123,36 @@ namespace OnlineRetailer.OrderApi.Controllers
                 return BadRequest(e.Message);
             }
         }
+        
+        /// <summary>
+        ///     Update a Customers Name
+        /// </summary>
+        /// <param name="id">Id of the customer to Change</param>
+        /// <param name="change">Object containing the new value of Name</param>
+        /// <returns></returns>
+        [HttpPut("{id}/[action]")]
+        public async Task<IActionResult> Cancel(string id)
+        {
+            _logger.Log(LogLevel.Debug, $"Put Request Received for Customer: {id}/Name");
+            try
+            {
+                _logger.Log(LogLevel.Debug, $"parsing {id} to guid");
+                var guid = Guid.Parse(id);
+                var (wasSuccess, message) = await _orderCommand.CancelAsync(guid);
+                if (!wasSuccess)
+                {
+                    _logger.Log(LogLevel.Error, $"Command on {id} was not applied. Reason: {message}");
+                    return BadRequest(message);
+                }
+
+                return NoContent();
+            }
+            catch (Exception e)
+            {
+                _logger.Log(LogLevel.Error, e.Message);
+                return BadRequest(e.Message);
+            }
+        }
     }
 
     public record NewOrderDto(IList<OrderLine> OrderLines, Guid CustomerId);

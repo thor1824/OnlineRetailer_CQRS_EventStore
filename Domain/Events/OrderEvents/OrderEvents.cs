@@ -81,14 +81,12 @@ namespace OnlineRetailer.Domain.Events.OrderEvents
 
         public string EventType => EVENT_TYPE;
     }
-
     public record OrderRejected(string Reason, DateTime TimeStamp) : IEvent
     {
         public static readonly string EVENT_TYPE = "Order_Rejected";
 
         public string EventType => EVENT_TYPE;
     }
-
     public record OrderCancelled(DateTime TimeStamp) : IEvent
     {
         public static readonly string EVENT_TYPE = "Order_Cancelled";

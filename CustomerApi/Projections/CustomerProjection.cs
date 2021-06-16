@@ -38,7 +38,7 @@ namespace OnlineRetailer.CustomerApi.Projections
                 case ChangeName changeName:
                     Apply(changeName);
                     break;
-                case ChangePhone changePhone:
+                case ChangePhoneNumber changePhone:
                     Apply(changePhone);
                     break;
                 case RemoveCustomer removeCustomer:
@@ -57,9 +57,9 @@ namespace OnlineRetailer.CustomerApi.Projections
             Aggregate.IsDeleted = true;
         }
 
-        private void Apply(ChangePhone changePhone)
+        private void Apply(ChangePhoneNumber changePhoneNumber)
         {
-            Aggregate.Phone = changePhone.NewPhoneNumber;
+            Aggregate.Phone = changePhoneNumber.NewPhoneNumber;
         }
 
         private void Apply(ChangeName changeName)

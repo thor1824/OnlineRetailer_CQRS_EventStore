@@ -63,6 +63,7 @@ namespace OnlineRetailer.Domain.Repository
                 Uuid.NewUuid(),
                 evnt.EventType,
                 JsonSerializer.SerializeToUtf8Bytes(evnt)
+                
             );
             _logger.Log(LogLevel.Debug, $"{evnt.EventType} Event Was Created");
 
